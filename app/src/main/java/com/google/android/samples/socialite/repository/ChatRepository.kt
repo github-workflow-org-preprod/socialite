@@ -16,6 +16,13 @@
 
 package com.google.android.samples.socialite.repository
 
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.Candidate
+import com.google.ai.client.generativeai.type.Content
+import com.google.ai.client.generativeai.type.GenerateContentResponse
+import com.google.ai.client.generativeai.type.SafetyRating
+import com.google.ai.client.generativeai.type.content
+import com.google.android.samples.socialite.BuildConfig
 import com.google.android.samples.socialite.data.ChatDao
 import com.google.android.samples.socialite.data.ContactDao
 import com.google.android.samples.socialite.data.MessageDao
@@ -27,6 +34,9 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 @Singleton
@@ -39,6 +49,8 @@ class ChatRepository @Inject internal constructor(
     private val coroutineScope: CoroutineScope,
 ) {
     private var currentChat: Long = 0L
+
+    val apiKey = "" // Insert API Key here
 
     init {
         notificationHelper.setUpNotificationChannels()
@@ -63,6 +75,7 @@ class ChatRepository @Inject internal constructor(
         mediaMimeType: String?,
     ) {
         val detail = chatDao.loadDetailById(chatId) ?: return
+
         messageDao.insert(
             Message(
                 id = 0L,
@@ -76,16 +89,121 @@ class ChatRepository @Inject internal constructor(
             ),
         )
         notificationHelper.pushShortcut(detail.firstContact, PushReason.OutgoingMessage)
+
         // Simulate a response from the peer.
         // The code here is just for demonstration purpose in this sample.
         // Real apps will use their server backend and Firebase Cloud Messaging to deliver messages.
         coroutineScope.launch {
             // The person is typing...
-            delay(5000L)
+//            delay(5000L)
             // Receive a reply.
-            messageDao.insert(
-                detail.firstContact.reply(text).apply { this.chatId = chatId }.build(),
+//            messageDao.insert(
+//                detail.firstContact.reply(text).apply { this.chatId = chatId }.build(),
+//            )
+
+            val generativeModel = GenerativeModel(
+                modelName = "gemini-pro",
+                apiKey = apiKey
             )
+
+//            val pastMessages: MutableList<Content> = mutableListOf()
+//            findMessages(chatId).collect { messageList ->
+//                messageList.onEach { message ->
+//                    if (message.text.isNotEmpty()) {
+//                        val role = if (message.isIncoming) "user" else "model"
+//                        pastMessages.add(content(role = role) { text(message.text) })
+//                    }
+//                }
+//            }
+
+
+            val pastMessages = findMessages(chatId).first().filter() { message ->
+                message.text.isNotEmpty()
+            }.sortedBy () { message ->
+                message.timestamp
+            }.fold(initial = mutableListOf<Message>()) {acc, message->
+                    if (acc.isEmpty()) {
+                        acc.add(message)
+                    } else {
+                        if (acc.last().isIncoming == message.isIncoming) {
+                            val lastMessage = acc.removeLast()
+                            val combinedMessage = Message(
+                                id = lastMessage.id,
+                                chatId = chatId,
+                                // User
+                                senderId = lastMessage.senderId,
+                                text = lastMessage.text + " " + message.text,
+                                mediaUri = null,
+                                mediaMimeType = null,
+                                timestamp = System.currentTimeMillis(),
+                            )
+                            acc.add(combinedMessage)
+                        } else {
+                            acc.add(message)
+                        }
+                    }
+                    return@fold acc
+                }
+
+
+//            val collapsedHistory = pastMessages.fold(initial = mutableListOf<Content>()) {  ->
+//                if (acc.isEmpty()) {
+//                    acc.add(content)
+//                } else {
+//                    if (acc.last().role == content.role) {
+//                        acc.last().parts.first()
+//                    }
+//                }
+//                return@fold acc
+//            }
+
+            val lastUserMessage = pastMessages.removeLast()
+            pastMessages.add(0, Message(
+                id = 0L,
+                chatId = chatId,
+                // User
+                senderId = 0L,
+                text = "Please respond to this chat conversation like a friendly ${detail.firstContact.replyModel}.",
+                mediaUri = null,
+                mediaMimeType = null,
+                timestamp = System.currentTimeMillis(),
+            ))
+            val pastContents = pastMessages.mapNotNull { message: Message ->
+                val role = if (message.isIncoming) "model" else "user"
+                return@mapNotNull content(role = role) { text(message.text) }
+            }
+            val chat = generativeModel.startChat(
+                history = pastContents
+            )
+
+
+            var generateContentResult: GenerateContentResponse?
+            try {
+//                chat.history.add(content("user") { text(text) })
+                generateContentResult = chat.sendMessage(lastUserMessage.text)
+            } catch (e: Exception) {
+                generateContentResult = null
+            }
+//        val safestResult = generateContentResult.candidates.minByOrNull { candidate: Candidate? ->
+//            candidate?.safetyRatings.maxByOrNull { safetyRating : SafetyRating? ->
+//                safetyRating?.probability ?: 1F
+//            }
+//        }
+            val response = generateContentResult?.text ?: "GenAI failed :("
+
+            messageDao.insert(
+                Message(
+                    id = 0L,
+                    chatId = chatId,
+                    // User
+                    senderId = detail.firstContact.id,
+                    text = response,
+                    mediaUri = null,
+                    mediaMimeType = null,
+                    timestamp = System.currentTimeMillis(),
+                ),
+            )
+
             notificationHelper.pushShortcut(detail.firstContact, PushReason.IncomingMessage)
             // Show notification if the chat is not on the foreground.
             if (chatId != currentChat) {
