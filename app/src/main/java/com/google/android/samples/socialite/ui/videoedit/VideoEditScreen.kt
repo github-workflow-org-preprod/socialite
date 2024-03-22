@@ -21,15 +21,18 @@ import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -62,6 +65,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -69,11 +73,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -231,10 +238,21 @@ private fun VideoMessagePreview(videoUri: String, isProcessing: Boolean) {
     // Return any frame that the framework considers representative of a valid frame
     val bitmap = mediaMetadataRetriever.frameAtTime
 
+    var coordX by remember { mutableStateOf(0f) }
+    var coordY by remember { mutableStateOf(0f) }
+
+
     if (bitmap != null) {
         Box(
             modifier = Modifier
-                .padding(10.dp),
+                .padding(10.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures {
+                        Log.i("Caren", "Tapped at: " + it.x.toString() + " " + it.y.toString())
+                        coordX = it.x
+                        coordY = it.y
+                    }
+                },
         ) {
             Image(
                 modifier = Modifier.width(200.dp),
@@ -253,11 +271,23 @@ private fun VideoMessagePreview(videoUri: String, isProcessing: Boolean) {
 
             if (isProcessing) {
                 CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier
+                        .align(Alignment.Center)
                         .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
                         .padding(8.dp),
                 )
             }
+
+            var text by remember { mutableStateOf("") }
+
+            TextField(
+                colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent),
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier
+                    .offset { IntOffset(coordX.toInt(), coordY.toInt()) },
+            )
+
         }
     } else {
         Log.e(TAG, "Error rendering preview of video")
