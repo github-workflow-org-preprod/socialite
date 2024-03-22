@@ -16,6 +16,7 @@
 
 package com.google.android.samples.socialite.ui.player
 
+import android.content.ComponentName
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,37 +24,46 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import com.google.android.samples.socialite.data.MediaPlaybackService
+import com.google.common.util.concurrent.MoreExecutors
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class VideoPlayerScreenViewModel : ViewModel() {
+@HiltViewModel
+class VideoPlayerScreenViewModel @Inject constructor(
+    @ApplicationContext private val application: Context
+) : ViewModel() {
 
     private val _player = MutableStateFlow<Player?>(null)
     val player = _player.asStateFlow()
     var shouldEnterPipMode by mutableStateOf(false)
 
     fun initializePlayer(uri: String, context: Context) {
-        val player = ExoPlayer.Builder(context.applicationContext)
-            .build().apply {
+        val sessionToken =
+            SessionToken(application, ComponentName(application, MediaPlaybackService::class.java))
+        val controllerFuture = MediaController.Builder(application, sessionToken).buildAsync()
+        controllerFuture.addListener({
+            _player.value = controllerFuture.get()
+            _player.value?.run {
                 setMediaItem(MediaItem.fromUri(uri))
                 prepare()
                 playWhenReady = true
+                addListener(object : Player.Listener {
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        shouldEnterPipMode = isPlaying
+                    }
+                })
             }
-
-        player.addListener(object : Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                shouldEnterPipMode = isPlaying
-            }
-        })
-
-        _player.value = player
+        }, MoreExecutors.directExecutor())
         shouldEnterPipMode = true
     }
 
     fun releasePlayer() {
-        _player.value?.release()
-        _player.value = null
         shouldEnterPipMode = false
     }
 }

@@ -16,6 +16,7 @@
 
 package com.google.android.samples.socialite.ui.home.timeline
 
+import android.content.ComponentName
 import android.content.Context
 import android.net.Uri
 import androidx.annotation.OptIn
@@ -28,9 +29,12 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import com.google.android.samples.socialite.data.MediaPlaybackService
 import com.google.android.samples.socialite.repository.ChatRepository
+import com.google.common.util.concurrent.MoreExecutors
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -94,31 +98,27 @@ class TimelineViewModel @Inject constructor(
     fun initializePlayer() {
         if (player != null) return
 
-        // Reduced buffer durations since the primary use-case is for short-form videos
-        val loadControl =
-            DefaultLoadControl.Builder().setBufferDurationsMs(500, 1000, 0, 500).build()
-        val newPlayer = ExoPlayer
-            .Builder(application.applicationContext)
-            .setLoadControl(loadControl)
-            .build()
-            .also {
-                it.repeatMode = ExoPlayer.REPEAT_MODE_ONE
-                it.playWhenReady = true
-                it.addListener(videoSizeListener)
+        val sessionToken =
+            SessionToken(application, ComponentName(application, MediaPlaybackService::class.java))
+        val controllerFuture = MediaController.Builder(application, sessionToken).buildAsync()
+        controllerFuture.addListener({
+            player = controllerFuture.get()
+            player?.run {
+                repeatMode = ExoPlayer.REPEAT_MODE_ONE
+                playWhenReady = true
+                addListener(videoSizeListener)
             }
+        }, MoreExecutors.directExecutor())
 
         videoRatio = null
-        player = newPlayer
     }
 
     fun releasePlayer() {
         player?.apply {
             removeListener(videoSizeListener)
-            release()
         }
 
         videoRatio = null
-        player = null
     }
 
     fun changePlayerItem(uri: Uri?) {

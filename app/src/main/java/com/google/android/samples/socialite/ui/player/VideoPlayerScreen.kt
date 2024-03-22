@@ -61,10 +61,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
 import androidx.core.graphics.toRect
 import androidx.core.util.Consumer
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.Player
 import androidx.media3.ui.PlayerView
 import com.google.android.samples.socialite.R
@@ -89,7 +89,7 @@ private const val TAG = "VideoPlayerScreen"
 fun VideoPlayerScreen(
     uri: String,
     modifier: Modifier = Modifier,
-    viewModel: VideoPlayerScreenViewModel = viewModel(),
+    viewModel: VideoPlayerScreenViewModel = hiltViewModel(),
     onCloseButtonClicked: () -> Unit,
 ) {
     val player = viewModel.player.collectAsStateWithLifecycle()

@@ -27,6 +27,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <application
         android:name=".SocialApp"
@@ -118,6 +120,16 @@
             tools:ignore="ExportedContentProvider" />
 
         <receiver android:name="com.google.android.samples.socialite.ReplyReceiver" />
+
+        <service
+            android:name=".data.MediaPlaybackService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
 
         <!-- Trigger Google Play services to install the backported photo picker module.
          Refer https://developer.android.com/training/data-storage/shared/photopicker#device-availability -->
