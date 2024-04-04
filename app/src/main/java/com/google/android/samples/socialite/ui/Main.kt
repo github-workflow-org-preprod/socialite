@@ -20,6 +20,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.graphics.Matrix
 import android.os.Bundle
 import android.widget.Toast
 import androidx.annotation.OptIn
@@ -37,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.MatrixTransformation
 import androidx.media3.effect.RgbFilter
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
@@ -67,6 +69,7 @@ import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.math.min
 
 @Composable
 fun Main(
@@ -247,6 +250,13 @@ fun transformVideo(
         .addListener(transformerListener)
         .build()
 
+    val zoomOutEffect = MatrixTransformation { presentationTimeUs ->
+        val transformationMatrix = Matrix()
+        val scale = 2 - min(1f, presentationTimeUs / 1_000_000f) // Video will zoom from 2x to 1x in the first second
+        transformationMatrix.postScale(/* sx= */ scale, /* sy= */ scale)
+        transformationMatrix // The calculated transformations will be applied each frame in turn
+    }
+
     val editedMediaItem =
         EditedMediaItem.Builder(MediaItem.fromUri(originalVideoUri))
             .setEffects(
@@ -254,6 +264,7 @@ fun transformVideo(
                     listOf(),
                     listOf(
                         RgbFilter.createGrayscaleFilter(),
+                        zoomOutEffect
                     ),
                 ),
             )
