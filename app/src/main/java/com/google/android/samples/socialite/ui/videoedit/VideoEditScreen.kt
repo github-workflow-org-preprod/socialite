@@ -70,6 +70,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -241,6 +244,11 @@ private fun VideoMessagePreview(videoUri: String, isProcessing: Boolean) {
     var coordX by remember { mutableStateOf(0f) }
     var coordY by remember { mutableStateOf(0f) }
 
+    var textFieldVisible by remember { mutableStateOf(false) }
+    var textVisible by remember { mutableStateOf(false) }
+
+    var text by remember { mutableStateOf("") }
+
 
     if (bitmap != null) {
         Box(
@@ -251,6 +259,14 @@ private fun VideoMessagePreview(videoUri: String, isProcessing: Boolean) {
                         Log.i("Caren", "Tapped at: " + it.x.toString() + " " + it.y.toString())
                         coordX = it.x
                         coordY = it.y
+
+                        if (!textFieldVisible) {
+                            textFieldVisible = true
+                            textVisible = false
+                        } else {
+                            textFieldVisible = false
+                            textVisible = true
+                        }
                     }
                 },
         ) {
@@ -278,15 +294,35 @@ private fun VideoMessagePreview(videoUri: String, isProcessing: Boolean) {
                 )
             }
 
-            var text by remember { mutableStateOf("") }
+            val focusRequester = remember { FocusRequester() }
 
-            TextField(
-                colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent),
-                value = text,
-                onValueChange = { text = it },
-                modifier = Modifier
-                    .offset { IntOffset(coordX.toInt(), coordY.toInt()) },
-            )
+            if (textFieldVisible) {
+                TextField(
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+//                        unfocusedContainerColor = Color.Transparent,
+//                        focusedIndicatorColor = Color.Transparent,
+//                        unfocusedIndicatorColor = Color.Transparent,
+//                        disabledContainerColor = Color.Transparent,
+                    ),
+                    value = text,
+                    onValueChange = { text = it },
+                    modifier = Modifier
+                        .offset { IntOffset(coordX.toInt(), coordY.toInt()) }
+                        .focusRequester(focusRequester)
+                        .onFocusChanged { focusState ->
+//                            if (!focusState.isFocused) {
+//                                // Add text
+//                                textFieldVisible = false
+//                                textVisible = true
+//                            }
+                        },
+                )
+            }
+
+            if (textVisible) {
+                Text(text, modifier = Modifier.offset { IntOffset(coordX.toInt(), coordY.toInt()) })
+            }
 
         }
     } else {

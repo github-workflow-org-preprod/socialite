@@ -17,6 +17,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <receiver android:name="androidx.media3.session.MediaButtonReceiver"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MEDIA_BUTTON" />
+        </intent-filter>
+    </receiver>
+
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
