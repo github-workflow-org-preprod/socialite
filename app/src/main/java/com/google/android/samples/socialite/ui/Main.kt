@@ -139,7 +139,9 @@ fun MainNavigation(
                         }
 
                         MediaType.VIDEO -> {
-                            navController.navigate("videoEdit?uri=${capturedMedia.uri}&chatId=$chatId")
+                            // Caren: navigate to player view?
+                            navController.navigate("videoPlayer?uri=${capturedMedia.uri}")
+//                            navController.navigate("videoEdit?uri=${capturedMedia.uri}&chatId=$chatId")
                         }
 
                         else -> {
