@@ -255,6 +255,7 @@ class CameraViewModel @Inject constructor(
     }
 
     fun saveVideo() {
+
         if (currentRecording == null || recordingState is VideoRecordEvent.Finalize) {
             return
         }

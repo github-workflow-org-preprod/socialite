@@ -31,10 +31,17 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
@@ -65,11 +72,7 @@ import com.google.android.samples.socialite.ui.photopicker.navigation.navigateTo
 import com.google.android.samples.socialite.ui.photopicker.navigation.photoPickerScreen
 import com.google.android.samples.socialite.ui.player.VideoPlayerScreen
 import com.google.android.samples.socialite.ui.videoedit.VideoEditScreen
-import java.io.File
-import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import kotlin.math.min
+import com.google.android.samples.socialite.ui.videoedit.transformVideo
 
 @Composable
 fun Main(
@@ -154,6 +157,7 @@ fun MainNavigation(
             ),
         ) { backStackEntry ->
             val chatId = backStackEntry.arguments?.getLong("chatId") ?: 0L
+
             Camera(
                 onMediaCaptured = { capturedMedia: Media? ->
                     when (capturedMedia?.mediaType) {
@@ -162,7 +166,8 @@ fun MainNavigation(
                         }
 
                         MediaType.VIDEO -> {
-                            // Caren: navigate to player view?
+                            // Show loading icon
+
                             transformVideo(
                                 context = navController.context,
                                 originalVideoUri = capturedMedia.uri.toString(),
@@ -183,12 +188,9 @@ fun MainNavigation(
                                     }
                                 },
                             )
-//                            navController.navigate("videoPlayer?uri=${capturedMedia.uri}")
-//                            navController.navigate("videoEdit?uri=${capturedMedia.uri}&chatId=$chatId")
                         }
 
                         else -> {
-                            // No media to use.
                             navController.popBackStack()
                         }
                     }
@@ -238,63 +240,6 @@ fun MainNavigation(
         val text = shortcutParams.text
         navController.navigate("chat/$chatId?text=$text")
     }
-}
-
-@OptIn(UnstableApi::class)
-fun transformVideo(
-    context: Context, originalVideoUri: String,
-    transformerListener: Transformer.Listener,
-) {
-    val transformer = Transformer.Builder(context)
-        .setVideoMimeType(MimeTypes.VIDEO_H264)
-        .addListener(transformerListener)
-        .build()
-
-    val zoomOutEffect = MatrixTransformation { presentationTimeUs ->
-        val transformationMatrix = Matrix()
-        val scale = 2 - min(1f, presentationTimeUs / 1_000_000f) // Video will zoom from 2x to 1x in the first second
-        transformationMatrix.postScale(/* sx= */ scale, /* sy= */ scale)
-        transformationMatrix // The calculated transformations will be applied each frame in turn
-    }
-
-    val editedMediaItem =
-        EditedMediaItem.Builder(MediaItem.fromUri(originalVideoUri))
-            .setEffects(
-                Effects(
-                    listOf(),
-                    listOf(
-                        RgbFilter.createGrayscaleFilter(),
-                        zoomOutEffect
-                    ),
-                ),
-            )
-            .build()
-
-    val editedVideoFileName = "Socialite-edited-recording-" +
-        SimpleDateFormat(CameraViewModel.FILENAME_FORMAT, Locale.US)
-            .format(System.currentTimeMillis()) + ".mp4"
-
-    transformedVideoFilePath = createNewVideoFilePath(context, editedVideoFileName)
-
-    // TODO: Investigate using MediaStoreOutputOptions instead of external cache file for saving
-    //  edited video https://github.com/androidx/media/issues/504
-    transformer.start(editedMediaItem, transformedVideoFilePath)
-}
-
-private fun createNewVideoFilePath(context: Context, fileName: String): String {
-    val externalCacheFile = createExternalCacheFile(context, fileName)
-    return externalCacheFile.absolutePath
-}
-
-/** Creates a cache file, resetting it if it already exists.  */
-@Throws(IOException::class)
-private fun createExternalCacheFile(context: Context, fileName: String): File {
-    val file = File(context.externalCacheDir, fileName)
-    check(!(file.exists() && !file.delete())) {
-        "Could not delete the previous transformer output file"
-    }
-    check(file.createNewFile()) { "Could not create the transformer output file" }
-    return file
 }
 
 data class ShortcutParams(
