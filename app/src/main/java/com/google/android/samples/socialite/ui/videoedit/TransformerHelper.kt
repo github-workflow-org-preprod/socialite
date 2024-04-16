@@ -29,6 +29,8 @@ import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.Effects
+import androidx.media3.transformer.ExportException
+import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
 import com.google.android.samples.socialite.ui.camera.CameraViewModel
 import com.google.android.samples.socialite.ui.transformedVideoFilePath
@@ -42,10 +44,27 @@ import kotlin.math.min
 fun transformVideo(
     context: Context,
     originalVideoUri: String,
-    transformerListener: Transformer.Listener,
+    onTransformationComplete: () -> Unit,
 ) {
     val transformer = Transformer.Builder(context)
-        .addListener(transformerListener)
+        .addListener(
+            @UnstableApi object : Transformer.Listener {
+                override fun onCompleted(
+                    composition: Composition,
+                    exportResult: ExportResult,
+                ) {
+                    onTransformationComplete()
+                }
+
+                override fun onError(
+                    composition: Composition,
+                    exportResult: ExportResult,
+                    exportException: ExportException,
+                ) {
+                    exportException.printStackTrace()
+                }
+            },
+        )
         .build()
 
     val videoToEdit = MediaItem.fromUri(originalVideoUri)
@@ -59,14 +78,12 @@ fun transformVideo(
         )
         .build()
 
-    val introImage = EditedMediaItemSequence(
-        EditedMediaItem.Builder(
-            MediaItem.fromUri("https://developer.android.com/static/images/shared/android-logo-verticallockup_primary.png"),
-        )
-            .setDurationUs(1_000_000) // Show the image for 3 seconds in the composition
-            .setFrameRate(30)
-            .build(),
+    val introImage = EditedMediaItem.Builder(
+        MediaItem.fromUri("https://developer.android.com/static/images/shared/android-logo-verticallockup_primary.png"),
     )
+        .setDurationUs(1_000_000) // Show the image for 3 seconds in the composition
+        .setFrameRate(30)
+        .build()
 
     val editedVideoFileName = "Socialite-edited-recording-" +
         SimpleDateFormat(CameraViewModel.FILENAME_FORMAT, Locale.US)
@@ -78,7 +95,7 @@ fun transformVideo(
     )
 
     transformer.start(
-        Composition.Builder(introImage, EditedMediaItemSequence(editedMediaItem))
+        Composition.Builder(EditedMediaItemSequence(editedMediaItem, introImage))
             .experimentalSetForceAudioTrack(true)
             .build(),
         transformedVideoFilePath,

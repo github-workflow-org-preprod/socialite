@@ -172,22 +172,25 @@ fun MainNavigation(
                             transformVideo(
                                 context = navController.context,
                                 originalVideoUri = capturedMedia.uri.toString(),
-                                @UnstableApi object : Transformer.Listener {
-                                    override fun onCompleted(
-                                        composition: Composition,
-                                        exportResult: ExportResult,
-                                    ) {
-                                        navController.navigate("videoPlayer?uri=${transformedVideoFilePath}")
-                                    }
-
-                                    override fun onError(
-                                        composition: Composition,
-                                        exportResult: ExportResult,
-                                        exportException: ExportException,
-                                    ) {
-                                        exportException.printStackTrace()
-                                    }
-                                },
+                                onTransformationComplete = {
+                                    navController.navigate("videoPlayer?uri=${transformedVideoFilePath}")
+                                }
+//                                @UnstableApi object : Transformer.Listener {
+//                                    override fun onCompleted(
+//                                        composition: Composition,
+//                                        exportResult: ExportResult,
+//                                    ) {
+//                                        navController.navigate("videoPlayer?uri=${transformedVideoFilePath}")
+//                                    }
+//
+//                                    override fun onError(
+//                                        composition: Composition,
+//                                        exportResult: ExportResult,
+//                                        exportException: ExportException,
+//                                    ) {
+//                                        exportException.printStackTrace()
+//                                    }
+//                                },
                             )
                         }
 
