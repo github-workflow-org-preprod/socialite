@@ -48,50 +48,25 @@ fun transformVideo(
         .addListener(transformerListener)
         .build()
 
-    val zoomOutEffect = MatrixTransformation { presentationTimeUs ->
-        val transformationMatrix = Matrix()
-        val scale = 2 - min(
-            1f,
-            presentationTimeUs / 1_000_000f,
-        ) // Video will zoom from 2x to 1x in the first second
-        transformationMatrix.postScale(/* sx= */ scale, /* sy= */ scale)
-        transformationMatrix // The calculated transformations will be applied each frame in turn
-    }
+    val videoToEdit = MediaItem.fromUri(originalVideoUri)
 
-    val grayscaleFilter = RgbFilter.createGrayscaleFilter()
-
-    val mediaItemToEdit = MediaItem.fromUri(originalVideoUri)
-    val listOfVideoEffects = listOf(
-        SpeedChangeEffect(2f),
-        grayscaleFilter,
-    )
-
-    val editedMediaItem = EditedMediaItem.Builder(mediaItemToEdit)
+    val editedMediaItem = EditedMediaItem.Builder(videoToEdit)
         .setEffects(
             Effects(
-                listOf(),
-                listOfVideoEffects,
+                listOf(), // audio effects
+                listOf(RgbFilter.createGrayscaleFilter()),
             ),
         )
         .build()
 
-    val compositionSequences =
-        mutableListOf<EditedMediaItemSequence>()
-    compositionSequences.add(
-        EditedMediaItemSequence(
-            EditedMediaItem.Builder(
-                MediaItem.fromUri("https://developer.android.com/static/images/shared/android-logo-verticallockup_primary.png"),
-            )
-                .setDurationUs(1_000_000) // Show the image for 3 seconds in the composition
-                .setFrameRate(30)
-                .build(),
-        ),
+    val introImage = EditedMediaItemSequence(
+        EditedMediaItem.Builder(
+            MediaItem.fromUri("https://developer.android.com/static/images/shared/android-logo-verticallockup_primary.png"),
+        )
+            .setDurationUs(1_000_000) // Show the image for 3 seconds in the composition
+            .setFrameRate(30)
+            .build(),
     )
-
-    compositionSequences.add(EditedMediaItemSequence(editedMediaItem))
-
-
-    Log.i("Caren", compositionSequences.size.toString())
 
     val editedVideoFileName = "Socialite-edited-recording-" +
         SimpleDateFormat(CameraViewModel.FILENAME_FORMAT, Locale.US)
@@ -103,7 +78,7 @@ fun transformVideo(
     )
 
     transformer.start(
-        Composition.Builder(compositionSequences)
+        Composition.Builder(introImage, EditedMediaItemSequence(editedMediaItem))
             .experimentalSetForceAudioTrack(true)
             .build(),
         transformedVideoFilePath,
