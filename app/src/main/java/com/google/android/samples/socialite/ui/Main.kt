@@ -49,6 +49,7 @@ import androidx.media3.effect.MatrixTransformation
 import androidx.media3.effect.RgbFilter
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.Effects
 import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult

@@ -235,7 +235,7 @@ class CameraViewModel @Inject constructor(
             recordingState = event
             if (event is VideoRecordEvent.Finalize) {
                 onMediaCaptured(Media(event.outputResults.outputUri, MediaType.VIDEO))
-                _isSavingVideo.value = false
+//                _isSavingVideo.value = false
             }
         }
 

@@ -18,14 +18,16 @@ package com.google.android.samples.socialite.ui.videoedit
 
 import android.content.Context
 import android.graphics.Matrix
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.MatrixTransformation
 import androidx.media3.effect.RgbFilter
 import androidx.media3.effect.SpeedChangeEffect
+import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.Effects
 import androidx.media3.transformer.Transformer
 import com.google.android.samples.socialite.ui.camera.CameraViewModel
@@ -58,19 +60,38 @@ fun transformVideo(
 
     val grayscaleFilter = RgbFilter.createGrayscaleFilter()
 
+    val mediaItemToEdit = MediaItem.fromUri(originalVideoUri)
+    val listOfVideoEffects = listOf(
+        SpeedChangeEffect(2f),
+        grayscaleFilter,
+    )
 
-    val editedMediaItem =
-        EditedMediaItem.Builder(MediaItem.fromUri(originalVideoUri))
-            .setEffects(
-                Effects(
-                    listOf(),
-                    listOf(
-                        SpeedChangeEffect(2f),
-                        zoomOutEffect,
-                    ),
-                ),
+    val editedMediaItem = EditedMediaItem.Builder(mediaItemToEdit)
+        .setEffects(
+            Effects(
+                listOf(),
+                listOfVideoEffects,
+            ),
+        )
+        .build()
+
+    val compositionSequences =
+        mutableListOf<EditedMediaItemSequence>()
+    compositionSequences.add(
+        EditedMediaItemSequence(
+            EditedMediaItem.Builder(
+                MediaItem.fromUri("https://developer.android.com/static/images/shared/android-logo-verticallockup_primary.png"),
             )
-            .build()
+                .setDurationUs(1_000_000) // Show the image for 3 seconds in the composition
+                .setFrameRate(30)
+                .build(),
+        ),
+    )
+
+    compositionSequences.add(EditedMediaItemSequence(editedMediaItem))
+
+
+    Log.i("Caren", compositionSequences.size.toString())
 
     val editedVideoFileName = "Socialite-edited-recording-" +
         SimpleDateFormat(CameraViewModel.FILENAME_FORMAT, Locale.US)
@@ -81,7 +102,12 @@ fun transformVideo(
         editedVideoFileName,
     )
 
-    transformer.start(editedMediaItem, transformedVideoFilePath)
+    transformer.start(
+        Composition.Builder(compositionSequences)
+            .experimentalSetForceAudioTrack(true)
+            .build(),
+        transformedVideoFilePath,
+    )
 }
 
 private fun createNewVideoFilePath(context: Context, fileName: String): String {
