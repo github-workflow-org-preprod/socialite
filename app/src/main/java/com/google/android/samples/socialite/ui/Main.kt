@@ -167,30 +167,12 @@ fun MainNavigation(
                         }
 
                         MediaType.VIDEO -> {
-                            // Show loading icon
-
                             transformVideo(
                                 context = navController.context,
                                 originalVideoUri = capturedMedia.uri.toString(),
                                 onTransformationComplete = {
                                     navController.navigate("videoPlayer?uri=${transformedVideoFilePath}")
                                 }
-//                                @UnstableApi object : Transformer.Listener {
-//                                    override fun onCompleted(
-//                                        composition: Composition,
-//                                        exportResult: ExportResult,
-//                                    ) {
-//                                        navController.navigate("videoPlayer?uri=${transformedVideoFilePath}")
-//                                    }
-//
-//                                    override fun onError(
-//                                        composition: Composition,
-//                                        exportResult: ExportResult,
-//                                        exportException: ExportException,
-//                                    ) {
-//                                        exportException.printStackTrace()
-//                                    }
-//                                },
                             )
                         }
 
