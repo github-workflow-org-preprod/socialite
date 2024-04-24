@@ -54,63 +54,52 @@ fun transformVideo(
     originalVideoUri: String,
     onTransformationComplete: () -> Unit,
 ) {
+
     val transformer = Transformer.Builder(context)
         .addListener(
-            @UnstableApi object : Transformer.Listener {
-                override fun onCompleted(
-                    composition: Composition,
-                    exportResult: ExportResult,
-                ) {
+            object : Transformer.Listener {
+                override fun onCompleted(composition: Composition, exportResult: ExportResult) {
+                    super.onCompleted(composition, exportResult)
                     onTransformationComplete()
-                }
-
-                override fun onError(
-                    composition: Composition,
-                    exportResult: ExportResult,
-                    exportException: ExportException,
-                ) {
-                    exportException.printStackTrace()
                 }
             },
         )
         .build()
 
-    val videoToEdit = MediaItem.fromUri(originalVideoUri)
+    val mediaItem = MediaItem.fromUri(originalVideoUri)
 
-    val editedMediaItem = EditedMediaItem.Builder(videoToEdit)
+    val outroImage = EditedMediaItem.Builder(
+        MediaItem.fromUri("https://io.google/2024/app/images/io24-homepage-hero-bg.webp"),
+    )
+        .setDurationUs(2_000_000)
+        .setFrameRate(30)
+        .build()
+
+    val editedMediaItem = EditedMediaItem.Builder(mediaItem)
         .setEffects(
             Effects(
                 listOf(), // audio processors
-                listOf(RgbFilter.createGrayscaleFilter(), buildTextOverlayEffect("Hello from IO")),
+                listOf(
+                    RgbFilter.createInvertedFilter(),
+                    buildTextOverlayEffect("Happy Thursday"),
+                ), //video effects
             ),
         )
         .build()
 
-    val introImage = EditedMediaItem.Builder(
-        MediaItem.fromUri("https://io.google/2024/app/images/io24-homepage-hero-bg.webp"),
-    )
-        .setDurationUs(1_000_000) // Show the image for 3 seconds in the composition
-        .setFrameRate(30)
-        .build()
-
-    val editedVideoFileName = "Socialite-edited-recording-" +
-        SimpleDateFormat(CameraViewModel.FILENAME_FORMAT, Locale.US)
-            .format(System.currentTimeMillis()) + ".mp4"
-
-    transformedVideoFilePath = createNewVideoFilePath(
-        context,
-        editedVideoFileName,
-    )
-
     transformer.start(
-        Composition.Builder(EditedMediaItemSequence(editedMediaItem, introImage))
-            .experimentalSetForceAudioTrack(true)
-            .build(),
-        transformedVideoFilePath,
+        Composition.Builder(
+            EditedMediaItemSequence(
+                editedMediaItem,
+                outroImage,
+
+                ),
+        ).build(),
+        createNewVideoFilePath(context),
     )
 }
 
-@OptIn(UnstableApi::class)
+@UnstableApi
 fun buildTextOverlayEffect(text: String): OverlayEffect {
     val overlaysBuilder = ImmutableList.Builder<TextureOverlay>()
 
@@ -131,6 +120,17 @@ fun buildTextOverlayEffect(text: String): OverlayEffect {
     overlaysBuilder.add(textOverlay)
 
     return OverlayEffect(overlaysBuilder.build())
+}
+
+private fun createNewVideoFilePath(context: Context): String {
+    transformedVideoFilePath = createNewVideoFilePath(
+        context,
+        "Socialite-edited-recording-" +
+            SimpleDateFormat(CameraViewModel.FILENAME_FORMAT, Locale.US)
+                .format(System.currentTimeMillis()) + ".mp4",
+    )
+
+    return transformedVideoFilePath
 }
 
 private fun createNewVideoFilePath(context: Context, fileName: String): String {
