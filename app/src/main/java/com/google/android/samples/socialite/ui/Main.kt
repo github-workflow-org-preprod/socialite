@@ -60,6 +60,8 @@ fun Main(
     }
 }
 
+var transformedVideoFilePath = ""
+
 @Composable
 fun MainNavigation(
     modifier: Modifier,
@@ -139,7 +141,13 @@ fun MainNavigation(
                         }
 
                         MediaType.VIDEO -> {
-                            navController.navigate("videoEdit?uri=${capturedMedia.uri}&chatId=$chatId")
+                            transformVideo(
+                                context = navController.context,
+                                originalVideoUri = capturedMedia.uri.toString(),
+                                onTransformationComplete = {
+                                    navController.navigate("videoPlayer?uri=${transformedVideoFilePath}")
+                                }
+                            )
                         }
 
                         else -> {
