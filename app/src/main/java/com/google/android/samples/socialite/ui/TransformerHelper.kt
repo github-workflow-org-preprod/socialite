@@ -19,6 +19,7 @@ package com.google.android.samples.socialite.ui
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
+import android.os.Build
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.SpannableStringBuilder
@@ -26,8 +27,11 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
 import android.text.style.StyleSpan
 import androidx.annotation.OptIn
+import androidx.annotation.RequiresApi
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.GaussianBlur
+import androidx.media3.effect.GaussianBlurWithFrameOverlaid
 import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.RgbFilter
 import androidx.media3.effect.TextOverlay
@@ -45,6 +49,7 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(UnstableApi::class)
 fun transformVideo(
     context: Context,
@@ -78,7 +83,8 @@ fun transformVideo(
                 listOf(), // audio processors
                 listOf( //video effects
                     RgbFilter.createGrayscaleFilter(),
-                    buildTextOverlayEffect("Hello from IO!"),
+                    GaussianBlurWithFrameOverlaid(
+                        /* sigma= */ 5f, /* scaleSharpX= */ 0.9f, /* scaleSharpY= */ .9f),
                 ),
             ),
         )
