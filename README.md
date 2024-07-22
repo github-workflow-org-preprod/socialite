@@ -13,7 +13,7 @@ Jetpack APIs used:
  - [Room](https://developer.android.com/jetpack/androidx/releases/room) Persisting messages in a SQLite database
  - [Window](https://developer.android.com/jetpack/androidx/releases/window) Detecting foldable device states
 
-The app also integrates the Gemini API that powers chatbot capabilities:
+The app also integrates the Gemini API that powers chatbot capabilities:  
 
  - [Google AI Client SDK](https://developer.android.com/ai/google-ai-client-sdk) Generative AI with Gemini 1.5 Flash
 
